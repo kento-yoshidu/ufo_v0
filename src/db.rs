@@ -20,6 +20,10 @@ impl Db {
         self.db.get_mut(&self.current_db).unwrap()
     }
 
+    pub fn current_name(&self) -> &str {
+        &self.current_db
+    }
+
     pub fn create_db(&mut self, name: &str) -> bool {
         if !self.db.contains_key(name) {
             self.db.insert(name.to_string(), Ufdb::new());

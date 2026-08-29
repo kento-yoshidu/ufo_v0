@@ -4,6 +4,7 @@ use clap::{Parser, Subcommand};
 use ufodb_v0::db;
 
 mod snapshot;
+mod storage;
 
 #[derive(Parser)]
 struct Cli {
@@ -23,6 +24,7 @@ enum Commands {
     Createdb { db_name: String },
     Use { db_name: String },
     Unmerge { key_a: String, key_b: String },
+    Save,
     Snapshot,
     SEED,
     Exit,
@@ -103,6 +105,14 @@ fn main() {
                     Commands::Unmerge { key_a, key_b } => {
                         db.current().unmerge(&key_a, &key_b);
                     },
+                    Commands::Save => {
+                        let db_name = db.current_name().to_string();
+
+                        match storage::save(db.current(), &db_name) {
+                            Ok(()) => println!("保存しました"),
+                            Err(e) => eprintln!("保存に失敗しました : {e}"),
+                        }
+                    }
                     Commands::Snapshot => {
                         let server = tiny_http::Server::http("127.0.0.1:0").unwrap();
 
