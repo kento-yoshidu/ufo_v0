@@ -117,4 +117,98 @@ mod tests {
         assert_eq!(uf.size(b), 2);
         assert_eq!(uf.size(c), 1);
     }
+
+    #[test]
+    fn unite_is_transitive() {
+        let mut uf = UnionFind::new();
+
+        let a = uf.add();
+        let b = uf.add();
+        let c = uf.add();
+
+        uf.unite(a, b);
+        uf.unite(b, c);
+
+        assert!(uf.same(a, c));
+    }
+
+    #[test]
+    fn unite_twice_is_idempotent() {
+        let mut uf = UnionFind::new();
+
+        let a = uf.add();
+        let b = uf.add();
+
+        assert!(uf.unite(a, b));
+        assert!(!uf.unite(a, b));
+        assert!(!uf.unite(b, a));
+        assert_eq!(uf.size(a), 2);
+    }
+
+    #[test]
+    fn same_is_true_for_identical_element() {
+        let mut uf = UnionFind::new();
+
+        let a = uf.add();
+
+        assert!(uf.same(a, a));
+    }
+
+    #[test]
+    fn unite_attaches_smaller_tree_under_larger_root() {
+        let mut uf = UnionFind::new();
+
+        let a = uf.add();
+        let b = uf.add();
+        let c = uf.add();
+
+        uf.unite(a, b); // {a, b}（size 2、代表元 a）
+        uf.unite(c, a); // c（size 1）が {a, b} 側にぶら下がる
+
+        assert_eq!(uf.find(a), a);
+        assert_eq!(uf.find(b), a);
+        assert_eq!(uf.find(c), a);
+    }
+
+    #[test]
+    fn find_compresses_path_without_changing_result() {
+        let mut uf = UnionFind::new();
+
+        let a = uf.add();
+        let b = uf.add();
+        let c = uf.add();
+        let d = uf.add();
+
+        uf.unite(a, b);
+        uf.unite(c, d);
+        uf.unite(b, d); // d -> c -> a という深さ2の木ができる
+
+        assert_eq!(uf.parent[d], c);
+
+        let root = uf.find(d);
+
+        assert_eq!(root, a);
+        assert_eq!(uf.parent[d], a); // 経路圧縮で直接 root を指す
+        assert_eq!(uf.find(d), a); // 圧縮後も結果は変わらない
+    }
+
+    #[test]
+    fn reset_makes_every_element_its_own_singleton() {
+        let mut uf = UnionFind::new();
+
+        let a = uf.add();
+        let b = uf.add();
+        let c = uf.add();
+
+        uf.unite(a, b);
+        uf.unite(b, c);
+
+        uf.reset();
+
+        assert!(!uf.same(a, b));
+        assert!(!uf.same(b, c));
+        assert_eq!(uf.size(a), 1);
+        assert_eq!(uf.size(b), 1);
+        assert_eq!(uf.size(c), 1);
+    }
 }

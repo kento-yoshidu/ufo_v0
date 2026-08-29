@@ -40,3 +40,68 @@ impl Db {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_starts_on_default_db() {
+        let mut db = Db::new();
+
+        assert_eq!(db.current_db, "ufdb");
+        assert!(db.current().is_empty());
+    }
+
+    #[test]
+    fn create_db_new_returns_true_and_switches() {
+        let mut db = Db::new();
+
+        assert!(db.create_db("foo"));
+        assert_eq!(db.current_db, "foo");
+    }
+
+    #[test]
+    fn create_db_existing_returns_false_but_still_switches() {
+        let mut db = Db::new();
+
+        db.create_db("foo");
+        db.use_db("ufdb");
+
+        assert!(!db.create_db("foo"));
+        assert_eq!(db.current_db, "foo");
+    }
+
+    #[test]
+    fn use_db_existing_switches_and_returns_true() {
+        let mut db = Db::new();
+
+        db.create_db("foo");
+        db.use_db("ufdb");
+
+        assert!(db.use_db("foo"));
+        assert_eq!(db.current_db, "foo");
+    }
+
+    #[test]
+    fn use_db_missing_returns_false_without_switching() {
+        let mut db = Db::new();
+
+        assert!(!db.use_db("nope"));
+        assert_eq!(db.current_db, "ufdb");
+    }
+
+    #[test]
+    fn databases_are_independent() {
+        let mut db = Db::new();
+
+        db.current().make_set("a");
+
+        db.create_db("other");
+        assert!(db.current().is_empty());
+        assert_eq!(db.current().size("a"), None);
+
+        db.use_db("ufdb");
+        assert_eq!(db.current().size("a"), Some(1));
+    }
+}
