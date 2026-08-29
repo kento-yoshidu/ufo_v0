@@ -172,4 +172,53 @@ mod tests {
 
         assert!(matches!(cli.command, Commands::Size { key } if key == "a"));
     }
+
+    #[test]
+    fn parses_insert_command() {
+        let cli = Cli::try_parse_from(["repl", "INSERT", "a"]).unwrap();
+
+        assert!(matches!(cli.command, Commands::Insert { key } if key == "a"));
+    }
+
+    #[test]
+    fn parses_createdb_and_use_commands() {
+        let cli = Cli::try_parse_from(["repl", "CREATEDB", "mydb"]).unwrap();
+        assert!(matches!(cli.command, Commands::Createdb { db_name } if db_name == "mydb"));
+
+        let cli = Cli::try_parse_from(["repl", "USE", "mydb"]).unwrap();
+        assert!(matches!(cli.command, Commands::Use { db_name } if db_name == "mydb"));
+    }
+
+    #[test]
+    fn parses_unmerge_command() {
+        let cli = Cli::try_parse_from(["repl", "UNMERGE", "a", "b"]).unwrap();
+
+        assert!(matches!(cli.command, Commands::Unmerge { key_a, key_b } if key_a == "a" && key_b == "b"));
+    }
+
+    #[test]
+    fn parses_no_arg_commands() {
+        assert!(matches!(
+            Cli::try_parse_from(["repl", "GROUPS"]).unwrap().command,
+            Commands::Groups
+        ));
+        assert!(matches!(
+            Cli::try_parse_from(["repl", "SNAPSHOT"]).unwrap().command,
+            Commands::Snapshot
+        ));
+        assert!(matches!(
+            Cli::try_parse_from(["repl", "SEED"]).unwrap().command,
+            Commands::SEED
+        ));
+        assert!(matches!(
+            Cli::try_parse_from(["repl", "EXIT"]).unwrap().command,
+            Commands::Exit
+        ));
+    }
+
+    #[test]
+    fn unknown_or_malformed_input_is_err_not_panic() {
+        assert!(Cli::try_parse_from(["repl", "BOGUS"]).is_err());
+        assert!(Cli::try_parse_from(["repl", "MERGE", "only_one"]).is_err());
+    }
 }

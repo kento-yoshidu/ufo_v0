@@ -75,4 +75,73 @@ mod tests {
 
         assert_eq!(graph.edges.get("a"), Some(&vec!["b".to_string(), "c".to_string()]));
     }
+
+    #[test]
+    fn add_node_creates_empty_entry() {
+        let mut graph = Graph::new();
+
+        graph.add_node("a");
+
+        assert_eq!(graph.edges.get("a"), Some(&vec![]));
+    }
+
+    #[test]
+    fn add_node_does_not_clobber_existing_edges() {
+        let mut graph = Graph::new();
+
+        graph.add_edge("a", "b");
+        graph.add_node("a");
+
+        assert_eq!(graph.edges.get("a"), Some(&vec!["b".to_string()]));
+    }
+
+    #[test]
+    fn neighbors_returns_none_for_unknown_key() {
+        let graph = Graph::new();
+
+        assert_eq!(graph.neighbors("a"), None);
+    }
+
+    #[test]
+    fn remove_edge_deletes_both_directions() {
+        let mut graph = Graph::new();
+
+        graph.add_edge("a", "b");
+        graph.remove_edge("a", "b");
+
+        assert_eq!(graph.neighbors("a"), Some(&vec![]));
+        assert_eq!(graph.neighbors("b"), Some(&vec![]));
+    }
+
+    #[test]
+    fn remove_edge_keeps_other_neighbors() {
+        let mut graph = Graph::new();
+
+        graph.add_edge("a", "b");
+        graph.add_edge("a", "c");
+
+        graph.remove_edge("a", "b");
+
+        assert_eq!(graph.neighbors("a"), Some(&vec!["c".to_string()]));
+        assert_eq!(graph.neighbors("c"), Some(&vec!["a".to_string()]));
+    }
+
+    #[test]
+    fn remove_edge_is_noop_for_missing_edge() {
+        let mut graph = Graph::new();
+
+        graph.add_edge("a", "b");
+        graph.remove_edge("a", "c");
+
+        assert_eq!(graph.neighbors("a"), Some(&vec!["b".to_string()]));
+    }
+
+    #[test]
+    fn remove_edge_does_not_panic_for_unknown_keys() {
+        let mut graph = Graph::new();
+
+        graph.remove_edge("x", "y");
+
+        assert_eq!(graph.neighbors("x"), None);
+    }
 }

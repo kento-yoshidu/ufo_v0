@@ -236,4 +236,119 @@ mod tests {
         assert!(!ufdb.same("b", "c"));
         assert!(!ufdb.same("a", "c"));
     }
+
+    #[test]
+    fn make_set_returns_false_for_existing_key() {
+        let mut ufdb = Ufdb::new();
+
+        assert!(ufdb.make_set("a"));
+        assert!(!ufdb.make_set("a"));
+    }
+
+    #[test]
+    fn same_is_transitive() {
+        let mut ufdb = Ufdb::new();
+
+        ufdb.unite("a", "b");
+        ufdb.unite("b", "c");
+
+        assert!(ufdb.same("a", "c"));
+    }
+
+    #[test]
+    fn is_empty_reflects_key_presence() {
+        let mut ufdb = Ufdb::new();
+
+        assert!(ufdb.is_empty());
+
+        ufdb.make_set("a");
+
+        assert!(!ufdb.is_empty());
+    }
+
+    #[test]
+    fn neighbors_exposes_graph_edges() {
+        let mut ufdb = Ufdb::new();
+
+        ufdb.unite("a", "b");
+
+        assert_eq!(ufdb.neighbors("a"), Some(&vec!["b".to_string()]));
+        assert_eq!(ufdb.neighbors("z"), None);
+    }
+
+    #[test]
+    fn groups_collects_every_key_exactly_once_by_representative() {
+        let mut ufdb = Ufdb::new();
+
+        ufdb.unite("a", "b");
+        ufdb.unite("b", "c");
+        ufdb.unite("d", "e");
+        ufdb.make_set("f");
+
+        let groups = ufdb.groups();
+
+        let mut sizes: Vec<usize> = groups.values().map(|members| members.len()).collect();
+        sizes.sort();
+        assert_eq!(sizes, vec![1, 2, 3]);
+
+        let mut all: Vec<String> = groups
+            .values()
+            .flatten()
+            .map(|key| key.to_string())
+            .collect();
+        all.sort();
+        assert_eq!(all, vec!["a", "b", "c", "d", "e", "f"]);
+    }
+
+    #[test]
+    fn seed_builds_expected_groups() {
+        let mut ufdb = Ufdb::new();
+
+        ufdb.seed();
+
+        assert!(ufdb.same("apple", "cherry"));
+        assert!(ufdb.same("date", "elderberry"));
+        assert!(ufdb.same("grape", "lemon"));
+        assert!(!ufdb.same("apple", "date"));
+        assert_eq!(ufdb.size("grape"), Some(4));
+        assert_eq!(ufdb.size("fig"), Some(1));
+    }
+
+    #[test]
+    fn unmerge_missing_edge_is_noop() {
+        let mut ufdb = Ufdb::new();
+
+        ufdb.unite("a", "b");
+        ufdb.unmerge("a", "z");
+
+        assert!(ufdb.same("a", "b"));
+    }
+
+    #[test]
+    fn unmerge_end_edge_only_detaches_leaf() {
+        let mut ufdb = Ufdb::new();
+
+        ufdb.unite("a", "b");
+        ufdb.unite("b", "c");
+
+        ufdb.unmerge("a", "b");
+
+        assert!(!ufdb.same("a", "b"));
+        assert!(ufdb.same("b", "c"));
+        assert_eq!(ufdb.size("a"), Some(1));
+    }
+
+    #[test]
+    fn unmerge_then_remerge_reconnects_group() {
+        let mut ufdb = Ufdb::new();
+
+        ufdb.unite("a", "b");
+        ufdb.unite("b", "c");
+
+        ufdb.unmerge("b", "c");
+        assert!(!ufdb.same("a", "c"));
+
+        ufdb.unite("b", "c");
+        assert!(ufdb.same("a", "c"));
+    }
 }

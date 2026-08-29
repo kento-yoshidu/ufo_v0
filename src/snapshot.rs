@@ -66,3 +66,56 @@ fn render_node(ufdb: &Ufdb, key: &str, visited: &mut HashSet<String>) -> String 
 
     format!("<li>{key}<ul>{children_html}</ul></li>")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_db_renders_no_groups() {
+        let mut ufdb = Ufdb::new();
+
+        let html = render(&mut ufdb);
+
+        assert!(html.contains("<body></body>"));
+    }
+
+    #[test]
+    fn isolated_node_renders_single_leaf() {
+        let mut ufdb = Ufdb::new();
+
+        ufdb.make_set("a");
+
+        let html = render(&mut ufdb);
+
+        assert!(html.contains("Group (size 1)"));
+        assert!(html.contains("<li>a</li>"));
+    }
+
+    #[test]
+    fn chain_renders_nested_list() {
+        let mut ufdb = Ufdb::new();
+
+        ufdb.unite("a", "b");
+        ufdb.unite("b", "c");
+
+        let html = render(&mut ufdb);
+
+        assert!(html.contains("<li>a<ul><li>b<ul><li>c</li></ul></li></ul></li>"));
+    }
+
+    #[test]
+    fn groups_are_ordered_by_size_desc() {
+        let mut ufdb = Ufdb::new();
+
+        ufdb.make_set("solo");
+        ufdb.unite("a", "b");
+        ufdb.unite("b", "c");
+
+        let html = render(&mut ufdb);
+
+        let big = html.find("Group (size 3)").unwrap();
+        let small = html.find("Group (size 1)").unwrap();
+        assert!(big < small);
+    }
+}
